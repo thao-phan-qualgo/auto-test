@@ -42,13 +42,28 @@ jobs:
           behave
         continue-on-error: true
 
-      - name: Generate Allure report
-        uses: simple-elf/allure-report-action@v1.9
+      - name: Get Allure history
+        uses: actions/checkout@v4
         if: always()
+        continue-on-error: true
         with:
-          allure_results: reports/allure-results
-          allure_report: allure-report
-          gh_pages: gh-pages
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Install Allure
+        if: always()
+        run: |
+          wget -q https://github.com/allure-framework/allure2/releases/download/2.24.1/allure-2.24.1.tgz
+          tar -zxf allure-2.24.1.tgz
+          sudo mv allure-2.24.1 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+
+      - name: Generate Allure report
+        if: always()
+        run: |
+          mkdir -p reports/allure-results/history
+          cp -r gh-pages/history/* reports/allure-results/history/ 2>/dev/null || true
+          allure generate reports/allure-results -o allure-report --clean
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
