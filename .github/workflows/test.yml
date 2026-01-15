@@ -4,8 +4,7 @@ on:
   push:
   workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: write-all
 
 jobs:
   test:
@@ -42,7 +41,7 @@ jobs:
           behave
         continue-on-error: true
 
-      - name: Get Allure history
+      - name: Load test report history
         uses: actions/checkout@v4
         if: always()
         continue-on-error: true
@@ -50,25 +49,18 @@ jobs:
           ref: gh-pages
           path: gh-pages
 
-      - name: Install Allure
+      - name: Build Allure report
+        uses: simple-elf/allure-report-action@v1.9
         if: always()
-        run: |
-          wget -q https://github.com/allure-framework/allure2/releases/download/2.24.1/allure-2.24.1.tgz
-          tar -zxf allure-2.24.1.tgz
-          sudo mv allure-2.24.1 /opt/allure
-          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+        with:
+          gh_pages: gh-pages
+          allure_history: allure-history
+          allure_results: reports/allure-results
 
-      - name: Generate Allure report
-        if: always()
-        run: |
-          mkdir -p reports/allure-results/history
-          cp -r gh-pages/history/* reports/allure-results/history/ 2>/dev/null || true
-          allure generate reports/allure-results -o allure-report --clean
-
-      - name: Deploy to GitHub Pages
+      - name: Publish report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: always()
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: allure-report
+          publish_dir: allure-history
