@@ -75,11 +75,7 @@ jobs:
 
       - name: Post the link to the report
         if: always()
-        uses: Sibz/github-status-action@v1
-        with:
-          authToken: ${{ secrets.GITHUB_TOKEN }}
-          context: "Test Report"
-          state: "success"
-          sha: ${{ github.event.pull_request.head.sha || github.sha }}
-          target_url: https://${{ github.repository_owner }}.github.io/auto-test/${{ github.run_number }}
-          repository: auto-test
+        run: |
+          REPORT_URL="https://${{ github.repository_owner }}.github.io/auto-test/${{ github.run_number }}"
+          echo "## Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "📊 [View Allure Report]($REPORT_URL)" >> $GITHUB_STEP_SUMMARY
