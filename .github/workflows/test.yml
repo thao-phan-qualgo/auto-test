@@ -45,7 +45,7 @@ jobs:
         echo "IMPLICIT_WAIT=10" >> .env
         echo "EXPLICIT_WAIT=30" >> .env
         echo "PAGE_LOAD_TIMEOUT=60" >> .env
-        echo "BASE_URL=https://example.com" >> .env
+        echo "BASE_URL=https://getskytrack.com" >> .env
         echo "ALLURE_RESULTS_DIR=reports/allure-results" >> .env
         echo "ALLURE_REPORT_DIR=reports/allure-report" >> .env
 
