@@ -1,0 +1,76 @@
+name: Test Automation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget unzip
+
+    - name: Install Allure
+      run: |
+        wget https://github.com/allure-framework/allure2/releases/download/2.24.1/allure-2.24.1.tgz
+        tar -zxvf allure-2.24.1.tgz
+        sudo mv allure-2.24.1 /opt/allure
+        sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
+        allure --version
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Create .env file
+      run: |
+        echo "BROWSER=chrome" >> .env
+        echo "HEADLESS=true" >> .env
+        echo "IMPLICIT_WAIT=10" >> .env
+        echo "EXPLICIT_WAIT=30" >> .env
+        echo "PAGE_LOAD_TIMEOUT=60" >> .env
+        echo "BASE_URL=https://example.com" >> .env
+        echo "ALLURE_RESULTS_DIR=reports/allure-results" >> .env
+        echo "ALLURE_REPORT_DIR=reports/allure-report" >> .env
+
+    - name: Run tests
+      run: |
+        mkdir -p reports/allure-results
+        behave
+
+    - name: Generate Allure Report
+      if: always()
+      run: |
+        allure generate reports/allure-results -o reports/allure-report --clean
+
+    - name: Upload Allure Report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: allure-report
+        path: reports/allure-report
+        retention-days: 30
+
+    - name: Publish Allure Report
+      if: always()
+      uses: simple-elf/allure-report-action@master
+      with:
+        allure_results: reports/allure-results
+        allure_history: reports/allure-history
+        keep_reports: 20
