@@ -2,19 +2,10 @@ name: Test Automation
 
 on:
   push:
-    branches: [main, master, develop]
-  pull_request:
-    branches: [main, master, develop]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  contents: write
 
 jobs:
   test:
@@ -28,19 +19,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-
-      - name: Install Allure
-        run: |
-          wget https://github.com/allure-framework/allure2/releases/download/2.24.1/allure-2.24.1.tgz
-          tar -zxvf allure-2.24.1.tgz
-          sudo mv allure-2.24.1 /opt/allure
-          sudo ln -s /opt/allure/bin/allure /usr/local/bin/allure
-          allure --version
 
       - name: Install Python dependencies
         run: |
@@ -62,55 +40,20 @@ jobs:
         run: |
           mkdir -p reports/allure-results
           behave
-
-      - name: Get Allure history
-        uses: actions/checkout@v4
-        if: always()
         continue-on-error: true
+
+      - name: Generate Allure report
+        uses: simple-elf/allure-report-action@v1.9
+        if: always()
         with:
-          ref: gh-pages
-          path: gh-pages
+          allure_results: reports/allure-results
+          allure_report: allure-report
+          gh_pages: gh-pages
 
-      - name: Generate Allure Report with history
-        if: always()
-        run: |
-          mkdir -p reports/allure-results/history
-          if [ -d "gh-pages/history" ]; then
-            cp -r gh-pages/history/* reports/allure-results/history/ || true
-          fi
-          allure generate reports/allure-results -o reports/allure-report --clean
-
-      - name: Upload Allure Report artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-report
-          path: reports/allure-report
-          retention-days: 30
-
-      - name: Setup Pages
-        if: always()
-        uses: actions/configure-pages@v4
-
-      - name: Upload to GitHub Pages
-        if: always()
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: reports/allure-report
-
-  deploy:
-    needs: test
-    if: always()
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    permissions:
-      pages: write
-      id-token: write
-
-    steps:
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v4
+        if: always()
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
