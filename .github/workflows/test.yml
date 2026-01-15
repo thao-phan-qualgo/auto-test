@@ -61,9 +61,28 @@ jobs:
         if: always()
         run: |
           mkdir -p allure-history/${{ github.run_number }}
-          cp -r gh-pages/${{ github.run_number }}/history reports/allure-results/history 2>/dev/null || true
+          cp -r gh-pages/*/history reports/allure-results/history 2>/dev/null || true
           allure generate reports/allure-results -o allure-history/${{ github.run_number }} --clean
           cp -r gh-pages/[0-9]* allure-history/ 2>/dev/null || true
+          
+          # Create index.html that redirects to latest report
+          cat > allure-history/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Allure Reports</title>
+            <meta http-equiv="refresh" content="0; url=${{ github.run_number }}/index.html">
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+              a { color: #007bff; }
+            </style>
+          </head>
+          <body>
+            <h1>Allure Test Reports</h1>
+            <p>Redirecting to <a href="${{ github.run_number }}/index.html">latest report (#${{ github.run_number }})</a>...</p>
+          </body>
+          </html>
+          EOF
 
       - name: Publish report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
